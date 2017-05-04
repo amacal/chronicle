@@ -24,18 +24,36 @@ void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, char *buffer)
 {
 	printf("in receive callback; status=%d; processed=%d\n", status, processed);
-	printf("in receive callback: message=%s", buffer);
 
-	printf("responding to %d\n", socket->handle);
-	socket_send(socket, buffer, processed, on_socket_send);
+	if (processed > 0)
+	{
+		printf("in receive callback: message=%s\n", buffer);
+		printf("responding to %d\n", socket->handle);
+		socket_send(socket, buffer, processed, on_socket_send);
+	}
+	else
+	{
+		printf("disposing %d\n", socket->handle);
+		socket_close(socket);
+		free(buffer);
+	}
 }
 
 void on_socket_send(ASYNC_SOCKET *socket, int status, int processed, char *buffer)
 {
 	printf("in send callback; status=%d; processed=%d\n", status, processed);
 
-	printf("continue receiving with %d\n", socket->handle);
-	socket_receive(socket, buffer, on_socket_receive);
+	if(processed > 0)
+	{
+		printf("continue receiving with %d\n", socket->handle);
+		socket_receive(socket, buffer, on_socket_receive);
+	}
+	else
+	{
+		printf("disposing %d\n", socket->handle);
+		socket_close(socket);
+		free(buffer);
+	}
 }
 
 int main(int argc, char *argv[])

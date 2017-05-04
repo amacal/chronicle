@@ -60,6 +60,7 @@ void iocp_start(COMPLETION_PORT *port);
 
 void socket_initialize(void);
 ASYNC_SOCKET *socket_new(COMPLETION_PORT *port);
+void socket_close(ASYNC_SOCKET *socket);
 
 void socket_bind(ASYNC_SOCKET *socket, SOCKET_BIND_CALLBACK callback);
 void socket_listen(ASYNC_SOCKET *socket, int backlog);

@@ -68,6 +68,12 @@ ASYNC_SOCKET *socket_new(COMPLETION_PORT *port)
 	return result;
 }
 
+void socket_close(ASYNC_SOCKET *socket)
+{
+	closesocket((SOCKET)socket->handle);
+	free(socket);
+}
+
 void socket_bind(ASYNC_SOCKET *socket, SOCKET_BIND_CALLBACK callback)
 {
 	int result;
@@ -189,25 +195,23 @@ void socket_receive_complete(OVERLAPPED *overlapped)
 
 void socket_receive(ASYNC_SOCKET *socket, char *buffer, SOCKET_RECEIVE_CALLBACK callback)
 {
+	int error;
 	int result;
 
 	SOCKET handle = (SOCKET)socket->handle;
-	LPWSABUF buffers = malloc(sizeof(struct WSABUFF));
+	LPWSABUF buffers = (LPWSABUF)(buffer + 1008);
 
-	DWORD *received = malloc(sizeof(DWORD));
-	DWORD *flags = malloc(sizeof(DWORD));
+	DWORD *received = (DWORD*)(buffer + 1000);
+	DWORD *flags = (DWORD*)(buffer + 1004);
 
 	int overlapped_size = sizeof(ASYNC_SOCKET_RECEIVE_OVERLAPPED);
 	ASYNC_SOCKET_RECEIVE_OVERLAPPED *overlapped = malloc(overlapped_size);
 
-	buffers[0].buf = buffer;
-	buffers[0].len = 1024;
-
-	*received = 0;
-	*flags = 0;
-
 	memset(overlapped, 0, overlapped_size);
 	memset(buffer, 0, 1024);
+
+	buffers[0].buf = buffer;
+	buffers[0].len = 1000;
 
 	overlapped->overlapped.callback = socket_receive_complete;
 	overlapped->socket = socket;
@@ -215,9 +219,17 @@ void socket_receive(ASYNC_SOCKET *socket, char *buffer, SOCKET_RECEIVE_CALLBACK 
 	overlapped->callback = callback;
 
 	result = WSARecv(handle, buffers, 1, received, flags, (OVERLAPPED*)overlapped, NULL);
+	error = WSAGetLastError();
 
-	logger_debug("Socket receiving; status=%d; overlapped=%d\n", result, overlapped);
-	logger_debug("Socket receiving; status=%d\n", WSAGetLastError());
+	logger_debug("Socket receiving; status=%d; error=%d\n", result, error);
+
+	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
+	{
+		logger_debug("Receiving failed; status=%d; error=%d\n", result, error);
+
+		free(overlapped);
+		callback(socket, error, 0, buffer);
+	}
 }
 
 void socket_send_complete(OVERLAPPED *overlapped)
@@ -240,21 +252,19 @@ void socket_send_complete(OVERLAPPED *overlapped)
 
 void socket_send(ASYNC_SOCKET *socket, char *buffer, int count, SOCKET_SEND_CALLBACK callback)
 {
+	int error;
 	int result;
 
-	SOCKET handle = (SOCKET)socket->handle;
-	LPWSABUF buffers = malloc(sizeof(struct WSABUFF));
-
-	DWORD *received = malloc(sizeof(DWORD));
 	DWORD flags = 0;
+
+	SOCKET handle = (SOCKET)socket->handle;
+	LPWSABUF buffers = (LPWSABUF)(buffer + 1008);
 
 	int overlapped_size = sizeof(ASYNC_SOCKET_SEND_OVERLAPPED);
 	ASYNC_SOCKET_SEND_OVERLAPPED *overlapped = malloc(overlapped_size);
 
 	buffers[0].buf = buffer;
 	buffers[0].len = count;
-
-	*received = 0;
 
 	memset(overlapped, 0, overlapped_size);
 
@@ -263,8 +273,16 @@ void socket_send(ASYNC_SOCKET *socket, char *buffer, int count, SOCKET_SEND_CALL
 	overlapped->buffer = buffer;
 	overlapped->callback = callback;
 
-	result = WSASend(handle, buffers, 1, received, flags, (OVERLAPPED*)overlapped, NULL);
+	result = WSASend(handle, buffers, 1, NULL, flags, (OVERLAPPED*)overlapped, NULL);
+	error = WSAGetLastError();
 
-	logger_debug("Socket sending; status=%d; overlapped=%d\n", result, overlapped);
-	logger_debug("Socket sending; status=%d\n", WSAGetLastError());
+	logger_debug("Socket sending; status=%d; error=%d\n", result, error);
+
+	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
+	{
+		logger_debug("Sending failed; status=%d; error=%d\n", result, error);
+
+		free(overlapped);
+		callback(socket, error, 0, buffer);
+	}
 }

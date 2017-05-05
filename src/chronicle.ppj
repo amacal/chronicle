@@ -31,7 +31,8 @@ WizCreator = Pelle Orinius#
 chronicle.exe: \
 	output\io.obj \
 	output\log.obj \
-	output\main.obj
+	output\main.obj \
+	output\iocp.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -48,6 +49,7 @@ output\main.obj: \
 output\io.obj: \
 	io.c \
 	io.h \
+	iocp.h \
 	log.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -58,6 +60,15 @@ output\log.obj: \
 	log.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
+# 
+# Build iocp.obj.
+# 
+output\iocp.obj: \
+	iocp.c \
+	iocp.h \
+	log.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .SILENT:
+
+.EXCLUDEDFILES:

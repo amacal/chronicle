@@ -1,11 +1,6 @@
 #include <windows.h>
 
-typedef void (*COMPLETION_CALLBACK)(OVERLAPPED *overlapped);
-
-typedef struct _COMPLETION_PORT
-{
-	HANDLE handle;
-} COMPLETION_PORT;
+#include "iocp.h"
 
 typedef struct _ASYNC_SOCKET
 {
@@ -17,12 +12,6 @@ typedef void (*SOCKET_BIND_CALLBACK)(ASYNC_SOCKET *socket, int port);
 typedef void (*SOCKET_ACCEPT_CALLBACK)(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted);
 typedef void (*SOCKET_RECEIVE_CALLBACK)(ASYNC_SOCKET *socket, int status, int processed, char *buffer);
 typedef void (*SOCKET_SEND_CALLBACK)(ASYNC_SOCKET *socket, int status, int processed, char *buffer);
-
-typedef struct _ASYNC_OVERLAPPED
-{
-	OVERLAPPED overlapped;
-	COMPLETION_CALLBACK callback;
-} ASYNC_OVERLAPPED;
 
 typedef struct _ASYNC_SOCKET_ACCEPT_OVERLAPPED
 {
@@ -53,10 +42,6 @@ typedef struct _ASYNC_FILE
 {
 	HANDLE handle;
 } ASYNC_FILE;
-
-
-COMPLETION_PORT *iocp_new(void);
-void iocp_start(COMPLETION_PORT *port);
 
 void socket_initialize(void);
 ASYNC_SOCKET *socket_new(COMPLETION_PORT *port);

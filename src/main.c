@@ -4,8 +4,8 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, char *buffer);
-void on_socket_send(ASYNC_SOCKET *socket, int status, int processed, char *buffer);
+void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, BUFFER *buffer);
+void on_socket_send(SOCKET_SEND_DATA *data);
 
 void on_socket_bound(ASYNC_SOCKET *socket, int port)
 {
@@ -15,44 +15,51 @@ void on_socket_bound(ASYNC_SOCKET *socket, int port)
 void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 {
 	printf("in accept callback; status=%d; accepted=%d\n", status, accepted->handle);
-	socket_receive(accepted, malloc(1024), on_socket_receive);
+	socket_receive(accepted, buffer_new(4 * 1048 * 1024), on_socket_receive);
 
 	printf("continue listing with %d\n", socket->handle);
 	socket_accept(socket, on_socket_accept);
 }
 
-void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, char *buffer)
+void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, BUFFER *buffer)
 {
 	printf("in receive callback; status=%d; processed=%d\n", status, processed);
 
 	if (processed > 0)
 	{
-		printf("in receive callback: message=%s\n", buffer);
 		printf("responding to %d\n", socket->handle);
-		socket_send(socket, buffer, processed, on_socket_send);
+		socket_send(socket, buffer, 0, processed, on_socket_send);
 	}
 	else
 	{
 		printf("disposing %d\n", socket->handle);
 		socket_close(socket);
-		free(buffer);
+		buffer_free(buffer);
 	}
 }
 
-void on_socket_send(ASYNC_SOCKET *socket, int status, int processed, char *buffer)
+void on_socket_send(SOCKET_SEND_DATA *data)
 {
-	printf("in send callback; status=%d; processed=%d\n", status, processed);
+	printf("in send callback; status=%d; processed=%d\n", data->status, data->processed);
 
-	if(processed > 0)
+	if (data->processed > 0)
 	{
-		printf("continue receiving with %d\n", socket->handle);
-		socket_receive(socket, buffer, on_socket_receive);
+		printf("continue receiving with %d\n", data->socket->handle);
+		socket_receive(data->socket, data->buffer, on_socket_receive);
+	}
+	else if (data->processed < data->count)
+	{
+		int offset = data->offset + data->processed;
+		int count = data->count - data->processed;
+
+		printf("continue sending with %d; offset=%d; count=%d\n", data->socket->handle, offset, count);
+		socket_send(data->socket, data->buffer, offset, count, on_socket_send);
 	}
 	else
 	{
-		printf("disposing %d\n", socket->handle);
-		socket_close(socket);
-		free(buffer);
+		printf("disposing %d\n", data->socket->handle);
+		socket_close(data->socket);
+		buffer_free(data->buffer);
 	}
 }
 

@@ -29,10 +29,11 @@ WizCreator = Pelle Orinius#
 # Build chronicle.exe.
 # 
 chronicle.exe: \
+	output\buffer.obj \
 	output\io.obj \
+	output\iocp.obj \
 	output\log.obj \
-	output\main.obj \
-	output\iocp.obj
+	output\main.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -40,7 +41,9 @@ chronicle.exe: \
 # 
 output\main.obj: \
 	main.c \
-	io.h
+	buffer.h \
+	io.h \
+	iocp.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -48,6 +51,7 @@ output\main.obj: \
 # 
 output\io.obj: \
 	io.c \
+	buffer.h \
 	io.h \
 	iocp.h \
 	log.h
@@ -67,6 +71,14 @@ output\iocp.obj: \
 	iocp.c \
 	iocp.h \
 	log.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build buffer.obj.
+# 
+output\buffer.obj: \
+	buffer.c \
+	buffer.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .SILENT:

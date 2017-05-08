@@ -27,16 +27,12 @@ void iocp_start(COMPLETION_PORT *port)
 		received = NULL;
 
 		result = GetQueuedCompletionStatus(port->handle, &bytes, &key, (OVERLAPPED**)&received, 3000);
-		logger_debug("IOCP returned; status=%d; bytes=%d; data=%d; wsa=%d\n", result, bytes, received, WSAGetLastError());
+		logger_debug("IOCP returned; status=%d; bytes=%d; overlapped=%d\n", result, bytes, received);
 
 		if (received)
 		{
-			logger_debug("Handling IOCP callback.\n");
+			logger_debug("Handling IOCP callback; overlapped=%d\n", received);
 			received->callback((OVERLAPPED*)received);
-
-			logger_debug("Releasing IOCP resource; address=%d.\n", received);
-			free(received);
-
 			logger_debug("IOCP callback completed.\n");
 		}
 	}

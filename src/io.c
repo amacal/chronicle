@@ -193,7 +193,7 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	data->buffer = buffer;
 
 	data->offset = 0;
-	data->count =buffers[0].len;
+	data->count = buffers[0].len;
 
 	result = WSARecv(handle, buffers, 1, received, flags, (OVERLAPPED*)overlapped, NULL);
 	error = WSAGetLastError();
@@ -203,6 +203,8 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
 	{
 		logger_debug("Receiving failed; status=%d; error=%d\n", result, error);
+
+		data->status = error;
 		callback(data);
 	}
 }
@@ -269,6 +271,8 @@ void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SO
 	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
 	{
 		logger_debug("Sending failed; status=%d; error=%d\n", result, error);
+
+		data->status = error;
 		callback(data);
 	}
 }

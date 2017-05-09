@@ -43,7 +43,8 @@ output\main.obj: \
 	main.c \
 	buffer.h \
 	io.h \
-	iocp.h
+	iocp.h \
+	log.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -81,6 +82,6 @@ output\buffer.obj: \
 	buffer.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
-
 .EXCLUDEDFILES:
+
+.SILENT:

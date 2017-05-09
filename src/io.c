@@ -136,20 +136,20 @@ void socket_accept(ASYNC_SOCKET *socket, SOCKET_ACCEPT_CALLBACK callback)
 
 void socket_receive_complete(OVERLAPPED *overlapped)
 {
-	int error;
 	int result;
 
 	DWORD flags = 0;
 	DWORD bytes = 0;		
 
     ASYNC_SOCKET_RECEIVE_OVERLAPPED *received = (ASYNC_SOCKET_RECEIVE_OVERLAPPED*)overlapped;
-	SOCKET handle = (SOCKET)received->socket->handle;
+	SOCKET handle = (SOCKET)received->data->socket->handle;
 
 	result = WSAGetOverlappedResult(handle, overlapped, &bytes, 1, &flags);
-	error = WSAGetLastError();
+	received->data->status = WSAGetLastError();
+	received->data->processed = bytes;
 
-	logger_debug("IOCP decoded; handle=%d; status=%d; bytes=%d; flags=%d; error=%d\n", handle, result, bytes, flags, error);
-	received->callback(received->socket, error, bytes, received->buffer);
+	logger_debug("IOCP decoded; handle=%d; status=%d; bytes=%d; flags=%d; error=%d\n", handle, result, bytes, flags, received->data->status);
+	received->callback(received->data);
 }
 
 void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback)
@@ -159,14 +159,18 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 
 	int size_bytes = sizeof(DWORD);
 	int size_buffer = sizeof(WSABUF);
+	int size_data = sizeof(SOCKET_SEND_DATA);
 
 	int size_overlapped = sizeof(ASYNC_SOCKET_RECEIVE_OVERLAPPED);
-	int size_outbound = size_overlapped + size_buffer + size_bytes * 2;
+	int size_outbound = size_overlapped + size_buffer + size_data + size_bytes * 2;
 
 	char *offset_overlapped = buffer->data + buffer->size - size_outbound;
 	ASYNC_SOCKET_RECEIVE_OVERLAPPED *overlapped = (ASYNC_SOCKET_RECEIVE_OVERLAPPED*)offset_overlapped;
 
-	char *offset_buffer = offset_overlapped + size_overlapped;
+	char *offset_data = offset_overlapped + size_overlapped;
+	SOCKET_RECEIVE_DATA *data = (SOCKET_RECEIVE_DATA*)offset_data;
+
+	char *offset_buffer = offset_data + size_data;
 	WSABUF *buffers = (WSABUF*)offset_buffer;
 
 	char *offset_received = offset_buffer + size_buffer;
@@ -176,15 +180,20 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	DWORD *flags = (DWORD*)offset_flags;
 
 	SOCKET handle = (SOCKET)socket->handle;
-	memset(buffer->data, 0, buffer->size);
+	memset(offset_overlapped, 0, size_outbound);
 
 	buffers[0].buf = buffer->data;
 	buffers[0].len = buffer->size - 128;
 
 	overlapped->overlapped.callback = socket_receive_complete;
-	overlapped->socket = socket;
-	overlapped->buffer = buffer;
 	overlapped->callback = callback;
+	overlapped->data = data;
+
+	data->socket = socket;
+	data->buffer = buffer;
+
+	data->offset = 0;
+	data->count =buffers[0].len;
 
 	result = WSARecv(handle, buffers, 1, received, flags, (OVERLAPPED*)overlapped, NULL);
 	error = WSAGetLastError();
@@ -194,7 +203,7 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
 	{
 		logger_debug("Receiving failed; status=%d; error=%d\n", result, error);
-		callback(socket, error, 0, buffer);
+		callback(data);
 	}
 }
 

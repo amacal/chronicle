@@ -4,7 +4,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, BUFFER *buffer);
+void on_socket_receive(SOCKET_RECEIVE_DATA *data);
 void on_socket_send(SOCKET_SEND_DATA *data);
 
 void on_socket_bound(ASYNC_SOCKET *socket, int port)
@@ -21,20 +21,20 @@ void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 	socket_accept(socket, on_socket_accept);
 }
 
-void on_socket_receive(ASYNC_SOCKET *socket, int status, int processed, BUFFER *buffer)
+void on_socket_receive(SOCKET_RECEIVE_DATA *data)
 {
-	printf("in receive callback; status=%d; processed=%d\n", status, processed);
+	printf("in receive callback; status=%d; processed=%d\n", data->status, data->processed);
 
-	if (processed > 0)
+	if (data->processed > 0)
 	{
-		printf("responding to %d\n", socket->handle);
-		socket_send(socket, buffer, 0, processed, on_socket_send);
+		printf("responding to %d\n", data->socket->handle);
+		socket_send(data->socket, data->buffer, 0, data->processed, on_socket_send);
 	}
 	else
 	{
-		printf("disposing %d\n", socket->handle);
-		socket_close(socket);
-		buffer_free(buffer);
+		printf("disposing %d\n", data->socket->handle);
+		socket_close(data->socket);
+		buffer_free(data->buffer);
 	}
 }
 

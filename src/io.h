@@ -16,7 +16,9 @@ typedef struct _SOCKET_RECEIVE_DATA
 
 	int status;
 	int processed;
-	int requested;
+
+	int offset;
+	int count;
 } SOCKET_RECEIVE_DATA;
 
 typedef struct _SOCKET_SEND_DATA
@@ -33,7 +35,7 @@ typedef struct _SOCKET_SEND_DATA
 
 typedef void (*SOCKET_BIND_CALLBACK)(ASYNC_SOCKET *socket, int port);
 typedef void (*SOCKET_ACCEPT_CALLBACK)(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted);
-typedef void (*SOCKET_RECEIVE_CALLBACK)(ASYNC_SOCKET *socket, int status, int processed, BUFFER *buffer);
+typedef void (*SOCKET_RECEIVE_CALLBACK)(SOCKET_RECEIVE_DATA *data);
 typedef void (*SOCKET_SEND_CALLBACK)(SOCKET_SEND_DATA *data);
 
 typedef struct _ASYNC_SOCKET_ACCEPT_OVERLAPPED
@@ -48,9 +50,8 @@ typedef struct _ASYNC_SOCKET_ACCEPT_OVERLAPPED
 typedef struct _ASYNC_SOCKET_RECEIVE_OVERLAPPED
 {
 	ASYNC_OVERLAPPED overlapped;
-	ASYNC_SOCKET *socket;
 	SOCKET_RECEIVE_CALLBACK callback;
-	BUFFER *buffer;
+	SOCKET_RECEIVE_DATA *data;
 } ASYNC_SOCKET_RECEIVE_OVERLAPPED;
 
 typedef struct _ASYNC_SOCKET_SEND_OVERLAPPED

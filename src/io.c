@@ -35,7 +35,7 @@ void socket_close(ASYNC_SOCKET *socket)
 	free(socket);
 }
 
-void socket_bind(ASYNC_SOCKET *socket, SOCKET_BIND_CALLBACK callback)
+void socket_bind(ASYNC_SOCKET *socket, int port, SOCKET_BIND_CALLBACK callback)
 {
 	int result;
 	struct sockaddr_in service;
@@ -45,6 +45,7 @@ void socket_bind(ASYNC_SOCKET *socket, SOCKET_BIND_CALLBACK callback)
 
 	service.sin_family = AF_INET;
 	service.sin_addr.s_addr = INADDR_ANY;
+	service.sin_port = ntohs(port);
 
 	SOCKET handle = (SOCKET)socket->handle;
 	SOCKADDR *name = (SOCKADDR*) &service;

@@ -70,7 +70,7 @@ void socket_initialize(void);
 ASYNC_SOCKET *socket_new(COMPLETION_PORT *port);
 void socket_close(ASYNC_SOCKET *socket);
 
-void socket_bind(ASYNC_SOCKET *socket, SOCKET_BIND_CALLBACK callback);
+void socket_bind(ASYNC_SOCKET *socket, int port, SOCKET_BIND_CALLBACK callback);
 void socket_listen(ASYNC_SOCKET *socket, int backlog);
 void socket_accept(ASYNC_SOCKET *socket, SOCKET_ACCEPT_CALLBACK callback);
 void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback);

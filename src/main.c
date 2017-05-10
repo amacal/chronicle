@@ -2,6 +2,7 @@
 
 #include "io.h"
 #include "log.h"
+#include "options.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -66,16 +67,18 @@ void on_socket_send(SOCKET_SEND_DATA *data)
 
 int main(int argc, char *argv[])
 {
+	OPTIONS options = options_parse(argc, argv);
+
 	COMPLETION_PORT *port;
 	ASYNC_SOCKET *listener;
 
-	logger_initialize("INFO");
+	logger_initialize(options.log_level);
 	socket_initialize();
 
 	port = iocp_new();
 	listener = socket_new(port);
 
-	socket_bind(listener, on_socket_bound);
+	socket_bind(listener, options.port, on_socket_bound);
 	socket_listen(listener, 10);
 	socket_accept(listener, on_socket_accept);
 

@@ -7,12 +7,14 @@ typedef struct _ASYNC_SOCKET
 {
 	HANDLE handle;
 	COMPLETION_PORT *port;
+	void *tag;
 } ASYNC_SOCKET;
 
 typedef struct _SOCKET_RECEIVE_DATA
 {
 	ASYNC_SOCKET *socket;
 	BUFFER *buffer;
+	void *tag;
 
 	int status;
 	int processed;
@@ -25,6 +27,7 @@ typedef struct _SOCKET_SEND_DATA
 {
 	ASYNC_SOCKET *socket;
 	BUFFER *buffer;
+	void *tag;
 
 	int status;
 	int processed;
@@ -61,17 +64,12 @@ typedef struct _ASYNC_SOCKET_SEND_OVERLAPPED
 	SOCKET_SEND_DATA *data;
 } ASYNC_SOCKET_SEND_OVERLAPPED;
 
-typedef struct _ASYNC_FILE
-{
-	HANDLE handle;
-} ASYNC_FILE;
-
 void socket_initialize(void);
-ASYNC_SOCKET *socket_new(COMPLETION_PORT *port);
+ASYNC_SOCKET *socket_new(COMPLETION_PORT *port, void *tag);
 void socket_close(ASYNC_SOCKET *socket);
 
 void socket_bind(ASYNC_SOCKET *socket, int port, SOCKET_BIND_CALLBACK callback);
 void socket_listen(ASYNC_SOCKET *socket, int backlog);
 void socket_accept(ASYNC_SOCKET *socket, SOCKET_ACCEPT_CALLBACK callback);
-void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback);
-void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SOCKET_SEND_CALLBACK callback);
+void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback, void *tag);
+void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SOCKET_SEND_CALLBACK callback, void *tag);

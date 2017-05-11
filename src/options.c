@@ -10,6 +10,7 @@ OPTIONS options_parse(int argc, char *argv[])
 
 	options.port = 0;
 	options.log_level = "INFO";
+	options.file_path = "z:\\\\file.dat";
 
 	for (int i = 0; i < argc; i++)
 	{
@@ -22,6 +23,12 @@ OPTIONS options_parse(int argc, char *argv[])
 		if (strcmp(argv[i], "--log-level") == 0)
 		{
 			position = 2;
+			continue;
+		}
+
+		if (strcmp(argv[i], "--file-path") == 0)
+		{
+			position = 3;
 			continue;
 		}
 
@@ -41,6 +48,11 @@ OPTIONS options_parse(int argc, char *argv[])
 		{
 			options.log_level = argv[i];
 			continue;
+		}
+
+		if (position == 3)
+		{
+			options.file_path = argv[i];
 		}
 	}
 

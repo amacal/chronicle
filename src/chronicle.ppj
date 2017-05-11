@@ -7,7 +7,7 @@ POC_PROJECT_VERSION = 7.00#
 POC_PROJECT_TYPE = 3#
 POC_PROJECT_OUTPUTDIR = output#
 POC_PROJECT_RESULTDIR = .#
-POC_PROJECT_ARGUMENTS = --port 12345 --log-level ABC#
+POC_PROJECT_ARGUMENTS = --port 12345 --log-level INFO#
 POC_PROJECT_WORKPATH = .#
 POC_PROJECT_EXECUTOR = #
 POC_PROJECT_ZIPEXTRA = #
@@ -30,11 +30,13 @@ WizCreator = Pelle Orinius#
 # 
 chronicle.exe: \
 	output\buffer.obj \
-	output\io.obj \
+	output\client.obj \
+	output\file.obj \
 	output\iocp.obj \
 	output\log.obj \
 	output\main.obj \
-	output\options.obj
+	output\options.obj \
+	output\socket.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -43,21 +45,22 @@ chronicle.exe: \
 output\main.obj: \
 	main.c \
 	buffer.h \
-	io.h \
+	file.h \
 	iocp.h \
 	log.h \
-	options.h
+	options.h \
+	socket.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
-# Build io.obj.
+# Build socket.obj.
 # 
-output\io.obj: \
-	io.c \
+output\socket.obj: \
+	socket.c \
 	buffer.h \
-	io.h \
 	iocp.h \
-	log.h
+	log.h \
+	socket.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -92,6 +95,29 @@ output\options.obj: \
 	options.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
+# 
+# Build file.obj.
+# 
+output\file.obj: \
+	file.c \
+	buffer.h \
+	file.h \
+	iocp.h \
+	log.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
+
+# 
+# Build client.obj.
+# 
+output\client.obj: \
+	client.c \
+	buffer.h \
+	client.h \
+	file.h \
+	iocp.h \
+	socket.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .EXCLUDEDFILES:
+
+.SILENT:

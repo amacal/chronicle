@@ -1,7 +1,7 @@
 #include <winsock2.h>
 #include <mswsock.h>
 
-#include "io.h"
+#include "socket.h"
 #include "log.h"
 
 void socket_initialize(void)
@@ -13,12 +13,14 @@ void socket_initialize(void)
 	logger_debug("WinSock initialized; status=%d\n", result);
 }
 
-ASYNC_SOCKET *socket_new(COMPLETION_PORT *port)
+ASYNC_SOCKET *socket_new(COMPLETION_PORT *port, void *tag)
 {
 	ASYNC_SOCKET *result;
 
 	result = malloc(sizeof(ASYNC_SOCKET));
+
 	result->port = port;
+	result->tag = tag;
 
 	result->handle = (HANDLE)WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 	logger_debug("Created new socket %d\n", result->handle);
@@ -102,7 +104,7 @@ void socket_accept(ASYNC_SOCKET *socket, SOCKET_ACCEPT_CALLBACK callback)
 	DWORD bytes;
 
 	SOCKET handle = (SOCKET)socket->handle;
-	ASYNC_SOCKET *accept = socket_new(socket->port);
+	ASYNC_SOCKET *accept = socket_new(socket->port, socket->tag);
 
 	LPFN_ACCEPTEX acceptex;
 	GUID acceptid = WSAID_ACCEPTEX;
@@ -153,7 +155,7 @@ void socket_receive_complete(OVERLAPPED *overlapped)
 	received->callback(received->data);
 }
 
-void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback)
+void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback, void *tag)
 {
 	int error;
 	int result;
@@ -190,8 +192,11 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	overlapped->callback = callback;
 	overlapped->data = data;
 
+	logger_debug("Receiving at %d\n", buffers[0].buf);
+
 	data->socket = socket;
 	data->buffer = buffer;
+	data->tag = tag;
 
 	data->offset = 0;
 	data->count = buffers[0].len;
@@ -228,7 +233,7 @@ void socket_send_complete(OVERLAPPED *overlapped)
 	received->callback(received->data);
 }
 
-void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SOCKET_SEND_CALLBACK callback)
+void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SOCKET_SEND_CALLBACK callback, void *tag)
 {
 	int error;
 	int result;
@@ -260,6 +265,7 @@ void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SO
 
 	data->socket = socket;
 	data->buffer = buffer;
+	data->tag = tag;
 
 	data->offset = offset;
 	data->count = count - offset;

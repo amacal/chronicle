@@ -1,5 +1,8 @@
 #include <windows.h>
 
+#ifndef IOCP_HEADER_INCLUDED
+#define IOCP_HEADER_INCLUDED
+
 typedef void (*COMPLETION_CALLBACK)(OVERLAPPED *overlapped);
 
 typedef struct _COMPLETION_PORT
@@ -24,3 +27,5 @@ COMPLETION_PORT *iocp_new(void);
    The function uses current thread. It blocks and never returns.
 */
 void iocp_start(COMPLETION_PORT *port);
+
+#endif

@@ -26,7 +26,7 @@ void iocp_start(COMPLETION_PORT *port)
 		bytes = 0;
 		received = NULL;
 
-		result = GetQueuedCompletionStatus(port->handle, &bytes, &key, (OVERLAPPED**)&received, 3000);
+		result = GetQueuedCompletionStatus(port->handle, &bytes, &key, (OVERLAPPED**)&received, 30000);
 		logger_debug("IOCP returned; status=%d; bytes=%d; overlapped=%d\n", result, bytes, received);
 
 		if (received)

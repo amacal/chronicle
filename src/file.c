@@ -3,6 +3,13 @@
 #include "file.h"
 #include "log.h"
 
+typedef struct _ASYNC_FILE_WRITE_OVERLAPPED
+{
+	ASYNC_OVERLAPPED overlapped;
+	FILE_WRITE_CALLBACK callback;
+	FILE_WRITTEN_DATA *data;
+} ASYNC_FILE_WRITE_OVERLAPPED;
+
 ASYNC_FILE *file_new(COMPLETION_PORT *port, char *path)
 {
 	ASYNC_FILE *result;
@@ -30,13 +37,6 @@ void file_close(ASYNC_FILE *file)
 	CloseHandle(file->handle);
 	free(file);
 }
-
-typedef struct _ASYNC_FILE_WRITE_OVERLAPPED
-{
-	ASYNC_OVERLAPPED overlapped;
-	FILE_WRITE_CALLBACK callback;
-	FILE_WRITTEN_DATA *data;
-} ASYNC_FILE_WRITE_OVERLAPPED;
 
 void file_write_complete(OVERLAPPED *overlapped)
 {
@@ -77,6 +77,8 @@ void file_write(ASYNC_FILE *file, long position, BUFFER *buffer, int offset, int
 	memset(offset_overlapped, 0, size_outbound);
 
 	overlapped->overlapped.callback = file_write_complete;
+	overlapped->overlapped.overlapped.Offset = position;
+
 	overlapped->callback = callback;
 	overlapped->data = data;
 

@@ -5,12 +5,13 @@
 
 #include "socket.h"
 #include "file.h"
+#include "partition.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
 void on_socket_receive(SOCKET_RECEIVE_DATA *data);
 void on_socket_send(SOCKET_SEND_DATA *data);
-void on_file_written(FILE_WRITTEN_DATA *data);
+void on_partition_written(PARTITION_WRITTEN_DATA *data);
 
 void on_socket_bound(ASYNC_SOCKET *socket, int port)
 {
@@ -26,62 +27,54 @@ void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 	socket_accept(socket, on_socket_accept);
 }
 
-void dispose(ASYNC_SOCKET *socket, ASYNC_FILE *file, BUFFER *buffer)
+void dispose(ASYNC_SOCKET *socket, PARTITION *partition, BUFFER *buffer)
 {
-	logger_debug("disposing socket %d\n", socket->handle);
+	logger_info("disposing socket %d\n", socket->handle);
 	socket_close(socket);
 
-	logger_debug("disposing buffer %d\n", buffer);
+	logger_info("disposing buffer %d\n", buffer);
 	buffer_free(buffer);
 }
 
 void on_socket_receive(SOCKET_RECEIVE_DATA *data)
 {
-	ASYNC_FILE *file = data->tag;
+	PARTITION *partition = data->tag;
 	ASYNC_SOCKET *socket = data->socket;
 
 	logger_debug("in receive callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
 
 	if (data->status == 0 && data->processed > 0)
 	{
-		logger_debug("writing to %d\n", file->handle);
-		file_write(file, 0, data->buffer, 0, data->processed, on_file_written, socket);
+		logger_debug("writing to %d\n", partition->file->handle);
+		partition_write(partition, data->buffer, data->processed, on_partition_written, socket);
 	}
 	else
 	{
-		dispose(socket, file, data->buffer);
+		dispose(socket, partition, data->buffer);
 	}
 }
 
-void on_file_written(FILE_WRITTEN_DATA *data)
+void on_partition_written(PARTITION_WRITTEN_DATA *data)
 {
-	ASYNC_FILE *file = data->file;
+	PARTITION *partition = data->partition;
 	ASYNC_SOCKET *socket = data->tag;
 
 	logger_debug("in written callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
 
-	if (data->status == 0 && data->processed < data->count)
+	if (data->status == 0 && data->processed > 0)
 	{
-		int offset = data->offset + data->processed;
-		int count = data->count - data->processed;
-
-		logger_debug("continue writing with %d; offset=%d; count=%d\n", data->file->handle, offset, count);
-		file_write(file, 0, data->buffer, offset, count, on_file_written, socket);
-	}
-	else if (data->status == 0 && data->processed > 0)
-	{
-		logger_debug("continue sending with %d\n", data->file->handle);
-		socket_send(socket, data->buffer, 0, data->offset + data->count, on_socket_send, file);
+		logger_debug("continue sending with %d\n", partition->file->handle);
+		socket_send(socket, data->buffer, 0, data->count, on_socket_send, partition);
 	}
 	else 
 	{
-		dispose(socket, file, data->buffer);
+		dispose(socket, partition, data->buffer);
 	}
 }
 
 void on_socket_send(SOCKET_SEND_DATA *data)
 {
-	ASYNC_FILE *file = data->tag;
+	PARTITION *partition = data->tag;
 	ASYNC_SOCKET *socket = data->socket;
 
 	logger_debug("in send callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
@@ -92,16 +85,16 @@ void on_socket_send(SOCKET_SEND_DATA *data)
 		int count = data->count - data->processed;
 
 		logger_debug("continue sending with %d; offset=%d; count=%d\n", socket->handle, offset, count);
-		socket_send(socket, data->buffer, offset, count, on_socket_send, file);
+		socket_send(socket, data->buffer, offset, count, on_socket_send, partition);
 	}
 	else if (data->status == 0 && data->processed > 0)
 	{
 		logger_debug("continue receiving with %d\n", socket->handle);
-		socket_receive(socket, data->buffer, on_socket_receive, file);
+		socket_receive(socket, data->buffer, on_socket_receive, partition);
 	}
 	else
 	{
-		dispose(socket, file, data->buffer);
+		dispose(socket, partition, data->buffer);
 	}
 }
 
@@ -111,14 +104,17 @@ int main(int argc, char *argv[])
 
 	COMPLETION_PORT *port;
 	ASYNC_SOCKET *listener;
+
 	ASYNC_FILE *file;
+	PARTITION *partition;
 
 	logger_initialize(options.log_level);
 	socket_initialize();
 
 	port = iocp_new();
 	file = file_new(port, options.file_path);
-	listener = socket_new(port, file);
+	partition = partition_new(file);
+	listener = socket_new(port, partition);
 
 	socket_bind(listener, options.port, on_socket_bound);
 	socket_listen(listener, 10);

@@ -1,7 +1,7 @@
-#include <windows.h>
-
 #ifndef IOCP_HEADER_INCLUDED
 #define IOCP_HEADER_INCLUDED
+
+#include <windows.h>
 
 typedef void (*COMPLETION_CALLBACK)(OVERLAPPED *overlapped);
 

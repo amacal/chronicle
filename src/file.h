@@ -1,3 +1,6 @@
+#ifndef FILE_HEADER_INCLUDED
+#define FILE_HEADER_INCLUDED
+
 #include <windows.h>
 
 #include "iocp.h"
@@ -28,3 +31,5 @@ ASYNC_FILE *file_new(COMPLETION_PORT *port, char *path);
 void file_close(ASYNC_FILE *file);
 
 void file_write(ASYNC_FILE *file, long position, BUFFER *buffer, int offset, int count, FILE_WRITE_CALLBACK callback, void *tag);
+
+#endif

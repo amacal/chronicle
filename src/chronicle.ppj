@@ -7,7 +7,7 @@ POC_PROJECT_VERSION = 7.00#
 POC_PROJECT_TYPE = 3#
 POC_PROJECT_OUTPUTDIR = output#
 POC_PROJECT_RESULTDIR = .#
-POC_PROJECT_ARGUMENTS = --port 12345 --log-level INFO#
+POC_PROJECT_ARGUMENTS = --port 12345 --log-level DEBUG#
 POC_PROJECT_WORKPATH = .#
 POC_PROJECT_EXECUTOR = #
 POC_PROJECT_ZIPEXTRA = #
@@ -36,8 +36,8 @@ chronicle.exe: \
 	output\log.obj \
 	output\main.obj \
 	output\options.obj \
-	output\socket.obj \
-	output\partition.obj
+	output\partition.obj \
+	output\socket.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -86,7 +86,8 @@ output\iocp.obj: \
 # 
 output\buffer.obj: \
 	buffer.c \
-	buffer.h
+	buffer.h \
+	log.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 # 
@@ -132,6 +133,6 @@ output\partition.obj: \
 	partition.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
-
 .SILENT:
+
+.EXCLUDEDFILES:

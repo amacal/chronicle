@@ -13,7 +13,7 @@ PARTITION *partition_new(ASYNC_FILE *file)
 	PARTITION *partition = malloc(size);
 
 	partition->file = file;
-	partition->position = 0LL;
+	partition->position = 0;
 
 	return partition;
 }

@@ -1,6 +1,7 @@
 #include <windows.h>
 
 #include "buffer.h"
+#include "log.h"
 
 BUFFER *buffer_new(int size)
 {
@@ -11,6 +12,8 @@ BUFFER *buffer_new(int size)
 
 	result->data = data + bytes;
 	result->size = size;
+
+	logger_debug("Allocated %d bytes at %d\n", size, data);
 
 	return result;
 }

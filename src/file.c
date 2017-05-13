@@ -59,7 +59,7 @@ void file_write_complete(OVERLAPPED *overlapped)
 	written->callback(written->data);
 }
 
-void file_write(ASYNC_FILE *file, long position, BUFFER *buffer, int offset, int count, FILE_WRITE_CALLBACK callback, void *tag)
+void file_write(ASYNC_FILE *file, long long position, BUFFER *buffer, int offset, int count, FILE_WRITE_CALLBACK callback, void *tag)
 {
 	int error;
 	int result;
@@ -77,7 +77,8 @@ void file_write(ASYNC_FILE *file, long position, BUFFER *buffer, int offset, int
 	memset(offset_overlapped, 0, size_outbound);
 
 	overlapped->overlapped.callback = file_write_complete;
-	overlapped->overlapped.overlapped.Offset = position;
+	overlapped->overlapped.overlapped.Offset = position & 0xffffffff;
+	overlapped->overlapped.overlapped.OffsetHigh = position >> 32;
 
 	overlapped->callback = callback;
 	overlapped->data = data;

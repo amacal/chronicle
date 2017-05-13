@@ -15,6 +15,7 @@ void socket_initialize(void)
 
 ASYNC_SOCKET *socket_new(COMPLETION_PORT *port, void *tag)
 {
+	DWORD value = 0;
 	ASYNC_SOCKET *result;
 
 	result = malloc(sizeof(ASYNC_SOCKET));
@@ -27,6 +28,12 @@ ASYNC_SOCKET *socket_new(COMPLETION_PORT *port, void *tag)
 
 	CreateIoCompletionPort(result->handle, port->handle, (u_long) 0, 0);
 	logger_debug("Attached socket %d to completion port %d\n", result->handle, port->handle);
+
+	value = setsockopt((SOCKET)result->handle, SOL_SOCKET, SO_SNDBUF, (char*) &value, sizeof(DWORD));
+	logger_debug("Set socket %d to SO_SNDBUF %d\n", result->handle, value);
+
+	value = setsockopt((SOCKET)result->handle, SOL_SOCKET, SO_RCVBUF, (char*) &value, sizeof(DWORD));
+	logger_debug("Set socket %d to SO_RCVBUF %d\n", result->handle, value);
 
 	return result;
 }
@@ -186,7 +193,7 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	memset(offset_overlapped, 0, size_outbound);
 
 	buffers[0].buf = buffer->data;
-	buffers[0].len = buffer->size - 128;
+	buffers[0].len = buffer->size - 1024;
 
 	overlapped->overlapped.callback = socket_receive_complete;
 	overlapped->callback = callback;
@@ -204,7 +211,7 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	result = WSARecv(handle, buffers, 1, received, flags, (OVERLAPPED*)overlapped, NULL);
 	error = WSAGetLastError();
 
-	logger_debug("Socket receiving; status=%d; error=%d\n", result, error);
+	logger_debug("Socket receiving; status=%d; error=%d; buffer=%d-%d; overlapped=%d\n", result, error, buffers[0].buf, buffers[0].buf + buffers[0].len, overlapped);
 
 	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
 	{
@@ -273,7 +280,7 @@ void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SO
 	result = WSASend(handle, buffers, 1, NULL, 0, (OVERLAPPED*)overlapped, NULL);
 	error = WSAGetLastError();
 
-	logger_debug("Socket sending; outbound=%d; status=%d; error=%d; overlapped=%d\n", size_outbound, result, error, overlapped);
+	logger_debug("Socket sending; outbound=%d; status=%d; error=%d; buffer=%d-%d; overlapped=%d\n", size_outbound, result, error, buffers[0].buf, buffers[0].buf + buffers[0].len, overlapped);
 
 	if (result == SOCKET_ERROR && error != WSA_IO_PENDING)
 	{

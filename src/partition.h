@@ -17,7 +17,7 @@ typedef struct _PARTITION_WRITTEN_DATA
 	int status;
 	int processed;
 
-	long offset;
+	long long offset;
 	int count;
 } PARTITION_WRITTEN_DATA;
 

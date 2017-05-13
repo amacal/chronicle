@@ -29,6 +29,8 @@ void partition_write_complete(FILE_WRITTEN_DATA *data)
 		int offset = data->offset + data->processed;
 		int count = data->count - data->processed;
 
+		argument->processed += data->processed;
+
 		logger_debug("Partition write splited; continuing; left=%d\n", count);
 		file_write(data->file, position, data->buffer, offset, count, partition_write_complete, complete);
 
@@ -61,8 +63,8 @@ void partition_write(PARTITION *partition, BUFFER *buffer, int count, PARTITION_
 	PARTITION_WRITE_COMPLETE *complete = malloc(complete_size);
 	PARTITION_WRITTEN_DATA *data = malloc(data_size);
 
-	long previous = partition->position;
-	long next = previous + count;
+	long long previous = partition->position;
+	long long next = previous + count;
 
 	data->partition = partition;
 	data->buffer = buffer;
@@ -77,9 +79,9 @@ void partition_write(PARTITION *partition, BUFFER *buffer, int count, PARTITION_
 	complete->data = data;
 	complete->callback = callback;
 
-	logger_debug("Moving partition position to %d\n", next);
+	logger_debug("Moving partition position to %lld\n", next);
 	partition->position = next;
 
-	logger_debug("Writing into file.\n");
+	logger_debug("Writing into file at %lld.\n", previous);
 	file_write(partition->file, previous, buffer, 0, count, partition_write_complete, complete);
 }

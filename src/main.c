@@ -7,12 +7,13 @@
 #include "socket.h"
 #include "file.h"
 #include "partition.h"
+#include "client.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
-void on_socket_receive(SOCKET_RECEIVE_DATA *data);
-void on_socket_send(SOCKET_SEND_DATA *data);
-void on_partition_written(PARTITION_WRITTEN_DATA *data);
+void on_client_receive(CLIENT_RECEIVE_DATA *data);
+void on_client_send(CLIENT_SEND_DATA *data);
+void on_client_written(CLIENT_WRITTEN_DATA *data);
 
 void on_socket_bound(ASYNC_SOCKET *socket, int port)
 {
@@ -21,81 +22,70 @@ void on_socket_bound(ASYNC_SOCKET *socket, int port)
 
 void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 {
+	BUFFER *buffer = buffer_new(257 * 1024);
+	CLIENT *client = client_new(accepted, socket->tag);
+
 	logger_info("in accept callback; status=%d; accepted=%d\n", status, accepted->handle);
-	socket_receive(accepted, buffer_new(1048576), on_socket_receive, socket->tag);
+	client_receive(client, buffer, on_client_receive, NULL);
 
 	logger_info("continue listing with %d\n", socket->handle);
 	socket_accept(socket, on_socket_accept);
 }
 
-void dispose(ASYNC_SOCKET *socket, PARTITION *partition, BUFFER *buffer)
+void dispose(CLIENT *client, BUFFER *buffer)
 {
-	logger_info("disposing socket %d\n", socket->handle);
-	socket_close(socket);
+	logger_info("disposing socket %d\n", client->socket->handle);
+	socket_close(client->socket);
+
+	logger_info("disposing client %d\n", client);
+	client_close(client);
 
 	logger_info("disposing buffer %d\n", buffer);
 	buffer_free(buffer);
 }
 
-void on_socket_receive(SOCKET_RECEIVE_DATA *data)
+void on_client_receive(CLIENT_RECEIVE_DATA *data)
 {
-	PARTITION *partition = data->tag;
-	ASYNC_SOCKET *socket = data->socket;
-
 	logger_debug("in receive callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
 
 	if (data->status == 0 && data->processed > 0)
 	{
-		logger_debug("writing to %d\n", partition->file->handle);
-		partition_write(partition, data->buffer, data->processed, on_partition_written, socket);
+		logger_debug("writing to %d\n", data->client->partition->file->handle);
+		client_write(data->client, data->buffer, data->processed, on_client_written, NULL);
 	}
 	else
 	{
-		dispose(socket, partition, data->buffer);
+		dispose(data->client, data->buffer);
 	}
 }
 
-void on_partition_written(PARTITION_WRITTEN_DATA *data)
+void on_client_written(CLIENT_WRITTEN_DATA *data)
 {
-	PARTITION *partition = data->partition;
-	ASYNC_SOCKET *socket = data->tag;
-
 	logger_debug("in written callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
 
 	if (data->status == 0 && data->processed > 0)
 	{
-		logger_debug("continue sending with %d\n", partition->file->handle);
-		socket_send(socket, data->buffer, 0, data->count, on_socket_send, partition);
+		logger_debug("continue sending with %d\n", data->client->partition->file->handle);
+		client_send(data->client, data->buffer, 0, data->count, on_client_send, NULL);
 	}
 	else 
 	{
-		dispose(socket, partition, data->buffer);
+		dispose(data->client, data->buffer);
 	}
 }
 
-void on_socket_send(SOCKET_SEND_DATA *data)
+void on_client_send(CLIENT_SEND_DATA *data)
 {
-	PARTITION *partition = data->tag;
-	ASYNC_SOCKET *socket = data->socket;
-
 	logger_debug("in send callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
 
-	if (data->status == 0 && data->processed < data->count)
+	if (data->status == 0 && data->processed > 0)
 	{
-		int offset = data->offset + data->processed;
-		int count = data->count - data->processed;
-
-		logger_debug("continue sending with %d; offset=%d; count=%d\n", socket->handle, offset, count);
-		socket_send(socket, data->buffer, offset, count, on_socket_send, partition);
-	}
-	else if (data->status == 0 && data->processed > 0)
-	{
-		logger_debug("continue receiving with %d\n", socket->handle);
-		socket_receive(socket, data->buffer, on_socket_receive, partition);
+		logger_debug("continue receiving with %d\n", data->client->socket->handle);
+		client_receive(data->client, data->buffer, on_client_receive, NULL);
 	}
 	else
 	{
-		dispose(socket, partition, data->buffer);
+		dispose(data->client, data->buffer);
 	}
 }
 

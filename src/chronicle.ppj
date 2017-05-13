@@ -46,6 +46,7 @@ chronicle.exe: \
 output\main.obj: \
 	main.c \
 	buffer.h \
+	client.h \
 	file.h \
 	iocp.h \
 	log.h \
@@ -118,6 +119,8 @@ output\client.obj: \
 	client.h \
 	file.h \
 	iocp.h \
+	log.h \
+	partition.h \
 	socket.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
@@ -133,6 +136,6 @@ output\partition.obj: \
 	partition.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
-
 .EXCLUDEDFILES:
+
+.SILENT:

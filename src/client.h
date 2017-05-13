@@ -43,6 +43,7 @@ typedef struct _CLIENT_WRITTEN_DATA
 	int status;
 	int processed;
 
+	long long identifier;
 	long long offset;
 	int count;
 } CLIENT_WRITTEN_DATA;

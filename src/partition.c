@@ -14,6 +14,7 @@ PARTITION *partition_new(ASYNC_FILE *file)
 
 	partition->file = file;
 	partition->position = 0;
+	partition->sequence = 0;
 
 	return partition;
 }
@@ -73,6 +74,7 @@ void partition_write(PARTITION *partition, BUFFER *buffer, int count, PARTITION_
 	data->processed = 0;
 	data->status = 0;
 
+	data->identifier = ++partition->sequence;
 	data->offset = previous;
 	data->count = count;
 	

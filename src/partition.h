@@ -9,6 +9,7 @@ typedef struct _PARTITION
 {
 	ASYNC_FILE *file;
 	long long position;
+	long long sequence;
 } PARTITION;
 
 typedef struct _PARTITION_WRITTEN_DATA
@@ -20,6 +21,7 @@ typedef struct _PARTITION_WRITTEN_DATA
 	int status;
 	int processed;
 
+	long long identifier;
 	long long offset;
 	int count;
 } PARTITION_WRITTEN_DATA;

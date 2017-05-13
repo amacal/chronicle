@@ -28,7 +28,7 @@ void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 	logger_info("in accept callback; status=%d; accepted=%d\n", status, accepted->handle);
 	client_receive(client, buffer, on_client_receive, NULL);
 
-	logger_info("continue listing with %d\n", socket->handle);
+	logger_info("continue listening with %d\n", socket->handle);
 	socket_accept(socket, on_socket_accept);
 }
 
@@ -63,10 +63,20 @@ void on_client_written(CLIENT_WRITTEN_DATA *data)
 {
 	logger_debug("in written callback; status=%d; processed=%d; tag=%d\n", data->status, data->processed, data->tag);
 
-	if (data->status == 0 && data->processed > 0)
+	if (data->status == 0)
 	{
-		logger_debug("continue sending with %d\n", data->client->partition->file->handle);
-		client_send(data->client, data->buffer, 0, data->count, on_client_send, NULL);
+		long long identifier = data->identifier;
+		char *buffer = data->buffer->data + 7;
+
+		for (int i = 0; i < 8; i++)
+		{
+			*buffer = (char)(identifier & 0xff);
+			buffer--;
+			identifier >>= 8;
+		}
+
+		logger_debug("responding to %d\n", data->client->partition->file->handle);
+		client_send(data->client, data->buffer, 0, 8, on_client_send, NULL);
 	}
 	else 
 	{
@@ -80,7 +90,7 @@ void on_client_send(CLIENT_SEND_DATA *data)
 
 	if (data->status == 0 && data->processed > 0)
 	{
-		logger_debug("continue receiving with %d\n", data->client->socket->handle);
+		logger_debug("receiving from %d\n", data->client->socket->handle);
 		client_receive(data->client, data->buffer, on_client_receive, NULL);
 	}
 	else

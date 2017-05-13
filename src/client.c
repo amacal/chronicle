@@ -151,6 +151,8 @@ void client_write_callback(PARTITION_WRITTEN_DATA *data)
 		logger_debug("Client write completed; calling callback.\n");
 
 		argument->processed = data->processed;
+		argument->identifier = data->identifier;
+
 		complete->callback(argument);
 	}
 	else
@@ -181,6 +183,7 @@ void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALL
 	data->processed = 0;
 	data->status = 0;
 	data->count = count;
+	data->identifier = 0;
 
 	complete->data = data;
 	complete->callback = callback;

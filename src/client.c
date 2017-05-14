@@ -151,8 +151,6 @@ void client_write_callback(PARTITION_WRITTEN_DATA *data)
 		logger_debug("Client write completed; calling callback.\n");
 
 		argument->processed = data->event->length;
-		argument->identifier = data->event->identifier;
-
 		complete->callback(argument);
 	}
 	else
@@ -185,10 +183,13 @@ void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALL
 	data->processed = 0;
 	data->status = 0;
 	data->count = count;
-	data->identifier = 0;
+
+	data->identifier = partition_next(client->partition);
+	event_identify(event, data->identifier);
 
 	complete->data = data;
 	complete->callback = callback;
 
+	event_hash(event);
 	partition_write(client->partition, event, client_write_callback, complete);
 }

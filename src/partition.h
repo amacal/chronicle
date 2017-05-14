@@ -26,6 +26,7 @@ typedef struct _PARTITION_WRITTEN_DATA
 typedef void (*PARTITION_WRITTEN_CALLBACK)(PARTITION_WRITTEN_DATA *data);
 
 PARTITION *partition_new(ASYNC_FILE *file);
+long long partition_next(PARTITION *partition);
 
 void partition_write(PARTITION *partition, EVENT *event, PARTITION_WRITTEN_CALLBACK callback, void *tag);
 

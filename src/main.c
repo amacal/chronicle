@@ -68,7 +68,7 @@ void on_client_written(CLIENT_WRITTEN_DATA *data)
 		long long identifier = data->identifier;
 		char *buffer = data->buffer->data + 7;
 
-		for (int i = 0; i < 8; i++)
+ 		for (int i = 0; i < 8; i++)
 		{
 			*buffer = (char)(identifier & 0xff);
 			buffer--;

@@ -19,6 +19,11 @@ PARTITION *partition_new(ASYNC_FILE *file)
 	return partition;
 }
 
+long long partition_next(PARTITION *partition)
+{
+	return ++partition->sequence;
+}
+
 void partition_write_complete(FILE_WRITTEN_DATA *data)
 {
 	PARTITION_WRITE_COMPLETE *complete = data->tag;

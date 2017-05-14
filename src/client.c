@@ -78,7 +78,7 @@ void client_receive(CLIENT *client, BUFFER *buffer, CLIENT_RECEIVE_CALLBACK call
 	complete->data = data;
 	complete->callback = callback;
 
-	socket_receive(client->socket, buffer, client_receive_callback, complete);
+	socket_receive(client->socket, buffer, 1024, client_receive_callback, complete);
 }
 
 void client_send_callback(SOCKET_SEND_DATA *data)
@@ -150,8 +150,8 @@ void client_write_callback(PARTITION_WRITTEN_DATA *data)
 	{
 		logger_debug("Client write completed; calling callback.\n");
 
-		argument->processed = data->processed;
-		argument->identifier = data->identifier;
+		argument->processed = data->event->length;
+		argument->identifier = data->event->identifier;
 
 		complete->callback(argument);
 	}
@@ -165,6 +165,7 @@ void client_write_callback(PARTITION_WRITTEN_DATA *data)
 
 	free(argument);
 	free(complete);
+	free(data->event);
 }
 
 void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALLBACK callback, void *tag)
@@ -174,6 +175,7 @@ void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALL
 
 	CLIENT_WRITTEN_COMPLETE *complete = malloc(complete_size);
 	CLIENT_WRITTEN_DATA *data = malloc(data_size);
+	EVENT *event = event_new(buffer, 1024, count);
 
 	data->client = client;
 	data->buffer = buffer;
@@ -188,5 +190,5 @@ void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALL
 	complete->data = data;
 	complete->callback = callback;
 
-	partition_write(client->partition, buffer, count, client_write_callback, complete);
+	partition_write(client->partition, event, client_write_callback, complete);
 }

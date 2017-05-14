@@ -162,7 +162,7 @@ void socket_receive_complete(OVERLAPPED *overlapped)
 	received->callback(received->data);
 }
 
-void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback, void *tag)
+void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, SOCKET_RECEIVE_CALLBACK callback, void *tag)
 {
 	int error;
 	int result;
@@ -192,8 +192,8 @@ void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBAC
 	SOCKET handle = (SOCKET)socket->handle;
 	memset(offset_overlapped, 0, size_outbound);
 
-	buffers[0].buf = buffer->data;
-	buffers[0].len = buffer->size - 1024;
+	buffers[0].buf = buffer->data + offset;
+	buffers[0].len = buffer->size - 1024 - offset;
 
 	overlapped->overlapped.callback = socket_receive_complete;
 	overlapped->callback = callback;

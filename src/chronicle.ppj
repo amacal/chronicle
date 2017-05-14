@@ -37,7 +37,8 @@ chronicle.exe: \
 	output\main.obj \
 	output\options.obj \
 	output\partition.obj \
-	output\socket.obj
+	output\socket.obj \
+	output\event.obj
 	$(LINK) $(LINKFLAGS) -out:"$@" $**
 
 # 
@@ -47,6 +48,7 @@ output\main.obj: \
 	main.c \
 	buffer.h \
 	client.h \
+	event.h \
 	file.h \
 	iocp.h \
 	log.h \
@@ -117,6 +119,7 @@ output\client.obj: \
 	client.c \
 	buffer.h \
 	client.h \
+	event.h \
 	file.h \
 	iocp.h \
 	log.h \
@@ -130,12 +133,22 @@ output\client.obj: \
 output\partition.obj: \
 	partition.c \
 	buffer.h \
+	event.h \
 	file.h \
 	iocp.h \
 	log.h \
 	partition.h
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.EXCLUDEDFILES:
+# 
+# Build event.obj.
+# 
+output\event.obj: \
+	event.c \
+	buffer.h \
+	event.h
+	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
 .SILENT:
+
+.EXCLUDEDFILES:

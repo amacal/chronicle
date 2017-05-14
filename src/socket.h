@@ -74,7 +74,7 @@ void socket_close(ASYNC_SOCKET *socket);
 void socket_bind(ASYNC_SOCKET *socket, int port, SOCKET_BIND_CALLBACK callback);
 void socket_listen(ASYNC_SOCKET *socket, int backlog);
 void socket_accept(ASYNC_SOCKET *socket, SOCKET_ACCEPT_CALLBACK callback);
-void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, SOCKET_RECEIVE_CALLBACK callback, void *tag);
+void socket_receive(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, SOCKET_RECEIVE_CALLBACK callback, void *tag);
 void socket_send(ASYNC_SOCKET *socket, BUFFER *buffer, int offset, int count, SOCKET_SEND_CALLBACK callback, void *tag);
 
 #endif

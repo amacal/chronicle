@@ -30,8 +30,6 @@ void partition_write_complete(FILE_WRITTEN_DATA *data)
 		int offset = data->offset + data->processed;
 		int count = data->count - data->processed;
 
-		argument->processed += data->processed;
-
 		logger_debug("Partition write splited; continuing; left=%d\n", count);
 		file_write(data->file, position, data->buffer, offset, count, partition_write_complete, complete);
 
@@ -41,7 +39,6 @@ void partition_write_complete(FILE_WRITTEN_DATA *data)
 	{
 		logger_debug("Partition write completed; calling callback.\n");
 
-		argument->processed += data->processed;
 		complete->callback(argument);
 	}
 	else
@@ -56,7 +53,7 @@ void partition_write_complete(FILE_WRITTEN_DATA *data)
 	free(complete);
 }
 
-void partition_write(PARTITION *partition, BUFFER *buffer, int count, PARTITION_WRITTEN_CALLBACK callback, void *tag)
+void partition_write(PARTITION *partition, EVENT *event, PARTITION_WRITTEN_CALLBACK callback, void *tag)
 {
 	size_t complete_size = sizeof(PARTITION_WRITE_COMPLETE);
 	size_t data_size = sizeof(PARTITION_WRITTEN_DATA);
@@ -65,18 +62,16 @@ void partition_write(PARTITION *partition, BUFFER *buffer, int count, PARTITION_
 	PARTITION_WRITTEN_DATA *data = malloc(data_size);
 
 	long long previous = partition->position;
-	long long next = previous + count;
+	long long next = previous + event->length;
 
 	data->partition = partition;
-	data->buffer = buffer;
+	data->event = event;
 
 	data->tag = tag;
-	data->processed = 0;
 	data->status = 0;
 
-	data->identifier = ++partition->sequence;
 	data->offset = previous;
-	data->count = count;
+	data->count = event->length;
 	
 	complete->data = data;
 	complete->callback = callback;
@@ -85,5 +80,5 @@ void partition_write(PARTITION *partition, BUFFER *buffer, int count, PARTITION_
 	partition->position = next;
 
 	logger_debug("Writing into file at %lld.\n", previous);
-	file_write(partition->file, previous, buffer, 0, count, partition_write_complete, complete);
+	file_write(partition->file, previous, event->buffer, event->offset, event->length, partition_write_complete, complete);
 }

@@ -22,26 +22,13 @@ void on_socket_bound(ASYNC_SOCKET *socket, int port)
 
 void on_socket_accept(ASYNC_SOCKET *socket, int status, ASYNC_SOCKET *accepted)
 {
-	BUFFER *buffer = buffer_new(257 * 1024);
 	CLIENT *client = client_new(accepted, socket->tag);
 
 	logger_info("in accept callback; status=%d; accepted=%d\n", status, accepted->handle);
-	client_receive(client, buffer, on_client_receive, NULL);
+	client_receive(client, on_client_receive, NULL);
 
 	logger_info("continue listening with %d\n", socket->handle);
 	socket_accept(socket, on_socket_accept);
-}
-
-void dispose(CLIENT *client, BUFFER *buffer)
-{
-	logger_info("disposing socket %d\n", client->socket->handle);
-	socket_close(client->socket);
-
-	logger_info("disposing client %d\n", client);
-	client_close(client);
-
-	logger_info("disposing buffer %d\n", buffer);
-	buffer_free(buffer);
 }
 
 void on_client_receive(CLIENT_RECEIVE_DATA *data)
@@ -51,11 +38,11 @@ void on_client_receive(CLIENT_RECEIVE_DATA *data)
 	if (data->status == 0 && data->processed > 0)
 	{
 		logger_debug("writing to %d\n", data->client->partition->file->handle);
-		client_write(data->client, data->buffer, data->processed, on_client_written, NULL);
+		client_write(data->client, data->processed, on_client_written, NULL);
 	}
 	else
 	{
-		dispose(data->client, data->buffer);
+		client_close(data->client);
 	}
 }
 
@@ -66,7 +53,7 @@ void on_client_written(CLIENT_WRITTEN_DATA *data)
 	if (data->status == 0)
 	{
 		long long identifier = data->identifier;
-		char *buffer = data->buffer->data + 7;
+		char *buffer = data->client->outgoing->data + 7;
 
  		for (int i = 0; i < 8; i++)
 		{
@@ -76,11 +63,11 @@ void on_client_written(CLIENT_WRITTEN_DATA *data)
 		}
 
 		logger_debug("responding to %d\n", data->client->partition->file->handle);
-		client_send(data->client, data->buffer, 0, 8, on_client_send, NULL);
+		client_send(data->client, 0, 8, on_client_send, NULL);
 	}
 	else 
 	{
-		dispose(data->client, data->buffer);
+		client_close(data->client);
 	}
 }
 
@@ -91,11 +78,11 @@ void on_client_send(CLIENT_SEND_DATA *data)
 	if (data->status == 0 && data->processed > 0)
 	{
 		logger_debug("receiving from %d\n", data->client->socket->handle);
-		client_receive(data->client, data->buffer, on_client_receive, NULL);
+		client_receive(data->client, on_client_receive, NULL);
 	}
 	else
 	{
-		dispose(data->client, data->buffer);
+		client_close(data->client);
 	}
 }
 

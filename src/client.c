@@ -27,11 +27,19 @@ CLIENT *client_new(ASYNC_SOCKET *socket, PARTITION *partition)
 	result->socket = socket;
 	result->partition = partition;
 
+	result->incoming = buffer_new(67 * 1024);
+	result->outgoing = buffer_new(67 * 1024);
+
 	return result;
 }
 
 void client_close(CLIENT *client)
 {
+	socket_close(client->socket);
+
+	buffer_free(client->incoming);
+	buffer_free(client->outgoing);
+
 	free(client);
 }
 
@@ -59,7 +67,7 @@ void client_receive_callback(SOCKET_RECEIVE_DATA *data)
 	free(complete);
 }
 
-void client_receive(CLIENT *client, BUFFER *buffer, CLIENT_RECEIVE_CALLBACK callback, void *tag)
+void client_receive(CLIENT *client, CLIENT_RECEIVE_CALLBACK callback, void *tag)
 {
 	size_t complete_size = sizeof(CLIENT_RECEIVE_COMPLETE);
 	size_t data_size = sizeof(CLIENT_RECEIVE_DATA);
@@ -68,7 +76,6 @@ void client_receive(CLIENT *client, BUFFER *buffer, CLIENT_RECEIVE_CALLBACK call
 	CLIENT_RECEIVE_DATA *data = malloc(data_size);
 
 	data->client = client;
-	data->buffer = buffer;
 	data->tag = tag;
 
 	data->offset = 0;
@@ -78,7 +85,7 @@ void client_receive(CLIENT *client, BUFFER *buffer, CLIENT_RECEIVE_CALLBACK call
 	complete->data = data;
 	complete->callback = callback;
 
-	socket_receive(client->socket, buffer, 1024, client_receive_callback, complete);
+	socket_receive(client->socket, client->incoming, 1024, client_receive_callback, complete);
 }
 
 void client_send_callback(SOCKET_SEND_DATA *data)
@@ -117,7 +124,7 @@ void client_send_callback(SOCKET_SEND_DATA *data)
 	free(complete);
 }
 
-void client_send(CLIENT *client, BUFFER *buffer, int offset, int count, CLIENT_SEND_CALLBACK callback, void *tag)
+void client_send(CLIENT *client, int offset, int count, CLIENT_SEND_CALLBACK callback, void *tag)
 {
 	size_t complete_size = sizeof(CLIENT_SEND_COMPLETE);
 	size_t data_size = sizeof(CLIENT_SEND_DATA);
@@ -126,7 +133,6 @@ void client_send(CLIENT *client, BUFFER *buffer, int offset, int count, CLIENT_S
 	CLIENT_SEND_DATA *data = malloc(data_size);
 
 	data->client = client;
-	data->buffer = buffer;
 	data->tag = tag;
 
 	data->offset = offset;
@@ -138,7 +144,7 @@ void client_send(CLIENT *client, BUFFER *buffer, int offset, int count, CLIENT_S
 	complete->data = data;
 	complete->callback = callback;
 
-	socket_send(client->socket, buffer, offset, count, client_send_callback, complete);
+	socket_send(client->socket, client->outgoing, offset, count, client_send_callback, complete);
 }
 
 void client_write_callback(PARTITION_WRITTEN_DATA *data)
@@ -166,17 +172,16 @@ void client_write_callback(PARTITION_WRITTEN_DATA *data)
 	free(data->event);
 }
 
-void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALLBACK callback, void *tag)
+void client_write(CLIENT *client, int count, CLIENT_WRITTEN_CALLBACK callback, void *tag)
 {
 	size_t complete_size = sizeof(CLIENT_WRITTEN_COMPLETE);
 	size_t data_size = sizeof(CLIENT_WRITTEN_DATA);
 
 	CLIENT_WRITTEN_COMPLETE *complete = malloc(complete_size);
 	CLIENT_WRITTEN_DATA *data = malloc(data_size);
-	EVENT *event = event_new(buffer, 1024, count);
+	EVENT *event = event_new(client->incoming, 1024, count);
 
 	data->client = client;
-	data->buffer = buffer;
 	data->tag = tag;
 
 	data->offset = 0;

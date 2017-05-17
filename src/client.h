@@ -6,12 +6,14 @@ typedef struct _CLIENT
 {
 	ASYNC_SOCKET *socket;
 	PARTITION *partition;
+
+	BUFFER *incoming;
+	BUFFER *outgoing;
 } CLIENT;
 
 typedef struct _CLIENT_RECEIVE_DATA
 {
 	CLIENT *client;
-	BUFFER *buffer;
 	void *tag;
 
 	int status;
@@ -24,7 +26,6 @@ typedef struct _CLIENT_RECEIVE_DATA
 typedef struct _CLIENT_SEND_DATA
 {
 	CLIENT *client;
-	BUFFER *buffer;
 	void *tag;
 
 	int status;
@@ -37,7 +38,6 @@ typedef struct _CLIENT_SEND_DATA
 typedef struct _CLIENT_WRITTEN_DATA
 {
 	CLIENT *client;
-	BUFFER *buffer;
 	void *tag;
 
 	int status;
@@ -55,7 +55,7 @@ typedef void (*CLIENT_WRITTEN_CALLBACK)(CLIENT_WRITTEN_DATA *data);
 CLIENT *client_new(ASYNC_SOCKET *socket, PARTITION *partition);
 void client_close(CLIENT *client);
 
-void client_receive(CLIENT *client, BUFFER *buffer, CLIENT_RECEIVE_CALLBACK callback, void *tag);
-void client_send(CLIENT *client, BUFFER *buffer, int offset, int count, CLIENT_SEND_CALLBACK callback, void *tag);
+void client_receive(CLIENT *client, CLIENT_RECEIVE_CALLBACK callback, void *tag);
+void client_send(CLIENT *client, int offset, int count, CLIENT_SEND_CALLBACK callback, void *tag);
 
-void client_write(CLIENT *client, BUFFER *buffer, int count, CLIENT_WRITTEN_CALLBACK callback, void *tag);
+void client_write(CLIENT *client, int count, CLIENT_WRITTEN_CALLBACK callback, void *tag);
